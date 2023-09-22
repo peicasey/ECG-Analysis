@@ -1,0 +1,28 @@
+{
+    "id": "A33CD0FD",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1679677596122.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "id": "45108a315cc8448b89fe386903395566",
+        "name": "ecg1.stablepeaks",
+        "title": "ecg1.stablepeaks",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 2308706344425961778,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1679677596122,
+    "read_only": false,
+    "read_only_alternatives": []
+}

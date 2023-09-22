@@ -1,0 +1,28 @@
+{
+    "id": "30B2981A",
+    "path": null,
+    "project_path": null,
+    "type": "object_explorer",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1684760797413.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "id": "4652ea9ef3bf41579caee669ca8c5535",
+        "name": "ecg1.windows",
+        "title": "ecg1.windows",
+        "language": "R",
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1559738546160,
+    "encoding": "",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1684760797413,
+    "read_only": false,
+    "read_only_alternatives": []
+}
