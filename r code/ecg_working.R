@@ -4,10 +4,10 @@ library("ggpmisc")
 library("ggplot2")
 
 # files
-ecg1 = as.data.frame(data.table::fread("ECG1.csv"))
-ecg2 = as.data.frame(data.table::fread("ECG2.csv"))
-
+ecg1 = as.data.frame(data.table::fread("data/ECG1.csv"))
+ecg2 = as.data.frame(data.table::fread("data/ECG2.csv"))
 ecg1 = ecg1[,-13]
+
 
 ########################################################
 # FUNCTIONS #

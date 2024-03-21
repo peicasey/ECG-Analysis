@@ -115,19 +115,14 @@ getStableWindows = function(peaks, minPeakStd, minTimeGap, windowSize = 100, nHi
   colnames(peaks) = c("time","ecg")
   stablePeaks = list()
   stableWindows = list()
-  # 6-7 peaks is sufficient;
-  # 600-700
-  # change window size to include at least 10 peaks to start
-  # windowSize = startWinSize
-  # if ((peaks[nHighPeaks, ]$time - peaks[1, ]$time)> startWinSize) {
-  #   windowSize = peaks[nHighPeaks, ]$time - peaks[1, ]$time
-  # }
   winStart = peaks[1, 1]
   winEnd = peaks[1, 1] + windowSize
   max_peaks = data.frame()
+
   if (!is.numeric(winEnd) || !is.numeric(peaks[nrow(peaks), 1])) {
     return("Error")
   }
+
   w = 1
   while (winEnd < as.numeric(peaks[nrow(peaks), 1])) {
     # get the nHighPeaks ECG peaks within the window
@@ -185,20 +180,13 @@ getStableWindows = function(peaks, minPeakStd, minTimeGap, windowSize = 100, nHi
       # increment entire window because all good
       winStart = winEnd
       winEnd = winStart + windowSize
-      # winStart = window[2, 1]
-      # winEnd = winStart + windowSize
+  
     }
     else {
-      #   # not too much variation
-      #   stablePeaks[[1]] = windowInfo
-      #   stablePeaks[[2]] = max_peaks
-      #   # increment window by 2nd element
-      #   # winStart = window[2, 1]
-      #   # winEnd = winStart + windowSize
-      # }
       # slide the window
       winStart = winStart + slide
       winEnd = winEnd + slide
+
     }
   }
   return(stableWindows)
@@ -251,19 +239,6 @@ getBaselines = function(windows) {
       baselines = rbind(baselines, baseline)
 
     }   
-
-
-    # # remove outliers and get mean
-    # z_scores = as.data.frame(sapply(window, function(window) (abs(window-mean(window))/sd(window))))
-    # no_outliers = z_scores[!rowSums(z_scores>3), ]
-    # mean = mean(no_outliers$ecg)
-
-    # time = window$time
-    # base = rep(mean, (length(window)))
-    # baseline = data.frame( time, base )
-
-    # baselines = rbind(baselines, baseline)
-
   }
 
   return (baselines)

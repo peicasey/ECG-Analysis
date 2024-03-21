@@ -28,8 +28,6 @@ listSamples = function(df) {
     sample = df[3:nrow(df), i:j]
     colnames(sample) = df[2, i:j]
     sample[c(1,2)] = sapply(sample[c(1, 2)],as.numeric)
-    #sample[,c(1,2)] = apply(sample[, c(1,2),drop=F], 2,
-    #                        function(x) as.numeric(as.character(x)))
     sample_name = df[1, i]
     samples[[g]] = list()
     samples[[g]][[1]] = sample_name
@@ -55,12 +53,11 @@ getGlobalMinPeak <- function(peaks) {
 
 # from ggpmisc2
 # returns data.frame of the local maxima from a vector of numerics
-find_peaks <-
-  function(x,
-  ignore_threshold = 0,
-  span = 3,
-  strict = TRUE,
-  na.rm = FALSE) {
+find_peaks <- function(x,
+                       ignore_threshold = 0,
+                       span = 3,
+                       strict = TRUE,
+                       na.rm = FALSE) {
 
   # find peaks
   if(is.null(span)) {
@@ -92,119 +89,7 @@ find_peaks <-
   }
 }
 
-# INPUTS
-# peaks - data.frame of two columns (time | ecg) that are the local
-#         maximum peaks from the data
-# minPeakStd - numeric representing the minimum standard deviation of
-#              peaks in a candidate window to be considered stable
-# minTimeGap - numeric representing the minimum standard deviation of
-#              time periods between peaks in a candidate window to be
-#              considered stable
-# startWinSize - numeric representing the starting candidate window size
-#                (function will automatically resize the window in order)
-#                to have nHighPeaks in the window if the window is too small
-# nHighPeaks - numeric representing the number of peaks needed for a window
-#
-# OUTPUT
-# stablePeaks - list of stable windows;
-#               the windows themselves are lists of:
-#                [[1]] numeric - standard deviation of the window's ecg peaks
-#                [[2]] data.frame - the window's ecg peaks (time | ecg)
-getStableWindows = function(peaks, minPeakStd, minTimeGap, windowSize = 100, nHighPeaks = 10, slide = 100) {
-  peaks = na.omit(peaks)
-  colnames(peaks) = c("time","ecg")
-  stablePeaks = list()
-  stableWindows = list()
-  # 6-7 peaks is sufficient;
-  # 600-700
-  # change window size to include at least 10 peaks to start
-  # windowSize = startWinSize
-  # if ((peaks[nHighPeaks, ]$time - peaks[1, ]$time)> startWinSize) {
-  #   windowSize = peaks[nHighPeaks, ]$time - peaks[1, ]$time
-  # }
-  winStart = peaks[1, 1]
-  winEnd = peaks[1, 1] + windowSize
-  max_peaks = data.frame()
-  if (!is.numeric(winEnd) || !is.numeric(peaks[nrow(peaks), 1])) {
-    return("Error")
-  }
-  w = 1
-  while (winEnd < as.numeric(peaks[nrow(peaks), 1])) {
-    # get the nHighPeaks ECG peaks within the window
-    window = na.omit(peaks[peaks$time >= winStart, ])
-    colnames(window) = c("time","ecg")
-    window = na.omit(window[window$time <= winEnd, ])
-
-    max_peaks = window[with(window, order(-ecg)), ]
-    max_peaks = max_peaks[1:nHighPeaks, ]
-    colnames(max_peaks) = c("time","ecg")
-    max_peaks <- na.omit(max_peaks)
-
-    # not enough max peaks
-    if (nrow(max_peaks) < nHighPeaks - 1) {
-      # increment window by 2nd element
-      winStart = window[2, 1]
-      winEnd = winStart + windowSize
-      next
-    }
-
-    # get the time difference between each
-    time_periods = data.frame()
-    for (i in 1:(nrow(max_peaks)-1)) {
-      time_periods = rbind(time_periods, max_peaks[i + 1, ] - max_peaks[i, ])
-    }
-
-    # get summary statistics
-    `R-R` = mean(time_periods$time) 
-    ecgSD = sd(max_peaks$ecg) # get standard deviation of ECG
-
-    # get baseline
-    base = peaks[((peaks$ecg < -200) & (peaks$ecg > 250)),]
-    # base = max_peaks[-todrop,]
-    baseline = mean(base$ecg)
-
-    # make a table for them
-    windowInfo = data.frame(ecgSD, `R-R`, baseline)
-
-    if (is.null(`R-R`) || is.null(ecgSD)) {
-      # increment window by 2nd element
-      winStart = window[2, 1]
-      winEnd = winStart + windowSize
-    }
-
-    # start position is a for-loop,
-    # start - position 1
-    # for loop will slide every 100 s
-    # check if it has a small enough stdev for both ECG and time periods
-    if ((`R-R` >= minTimeGap) && (ecgSD <= minPeakStd)) {
-      # low enough variation; add this as a stable window
-      stablePeaks[[1]] = windowInfo
-      stablePeaks[[2]] = max_peaks
-      stableWindows[[w]] = stablePeaks
-      w = w + 1
-      # increment entire window because all good
-      winStart = winEnd
-      winEnd = winStart + windowSize
-      # winStart = window[2, 1]
-      # winEnd = winStart + windowSize
-    }
-    else {
-      #   # not too much variation
-      #   stablePeaks[[1]] = windowInfo
-      #   stablePeaks[[2]] = max_peaks
-      #   # increment window by 2nd element
-      #   # winStart = window[2, 1]
-      #   # winEnd = winStart + windowSize
-      # }
-      # slide the window
-      winStart = winStart + slide
-      winEnd = winEnd + slide
-    }
-  }
-  return(stableWindows)
-}
-
-
+# get baselines
 getBaselines = function(windows) {
 
   baselines = data.frame()
@@ -263,8 +148,10 @@ getIntersection = function(ecg, baseline) {
 ecg1.samples = listSamples(ecg1)
 stdevs = c(60, 55, 20, 55, 20, 40, 20, 20, 55, 40)
 ecg2.samples = listSamples(ecg2)
+
 ecg1.peaks = list()
 ecg1.windows = list()
+
 for (i in 1:(length(ecg1.samples))) {
   # this sample instance
   sample = ecg1.samples[[i]][[2]]
@@ -307,20 +194,17 @@ for (i in 1:(length(ecg1.samples))) {
   noOut = na.omit(sample[!sample$`ECG (mV)` %in% peaks$`ECG (mV)`, ])
   model = lm(`ECG (mV)` ~ `Time (ms)`, data=peaks)
   expectedStdev = stdevs[i]
-  # expectedStdev = (0.5)^(abs(mean(noOut$`ECG (mV)`)) * summary(model)$adj.r.squared) * 50
-  # expectedStdev = (0.5)^(abs(mean(noOut$`ECG (mV)`))) * abs(mean(noOut$`ECG (mV)`)) * 50
   peaksPerWindow = 6
   minTimeGap = 60
-  # windowSize = nPeaks * ((peaks$`Time (ms)`[nrow(peaks)] - peaks$`Time (ms)`[1]) / nrow(peaks))
   windowSize = 1000
   
   # get the windows for this peak
   windows = getStableWindows(peaks = peaks,
-                              minPeakStd = expectedStdev,
-                              minTimeGap = minTimeGap,
-                              windowSize = windowSize,
-                              nHighPeaks = peaksPerWindow,
-                              slide = 100)
+  minPeakStd = expectedStdev,
+  minTimeGap = minTimeGap,
+  windowSize = windowSize,
+  nHighPeaks = peaksPerWindow,
+  slide = 100)
   ecg1.windows[[i]] = windows
 
   # configure highlighting of the peaks
@@ -343,11 +227,8 @@ for (i in 1:(length(ecg1.samples))) {
   label3 = paste("# peaks per window =", peaksPerWindow)
   label = paste(label0, label1, label2, label3, sep="\n")
 
-  # time = sample$`Time (ms)`
-  # base = rep(400, (length(time)))
   baseline = getBaselines(windows)
   print(baseline)
-
 
 
   # generate images with sections highlighted
@@ -365,6 +246,7 @@ for (i in 1:(length(ecg1.samples))) {
     geom_rect(data=rects, inherit.aes=FALSE, aes(xmin=start, xmax=end, ymin=min(peaks$`ECG (mV)`),
     ymax=max(peaks$`ECG (mV)`), group=group), color="transparent",
     fill="orange", alpha=0.3)
+
   }
   else {
     ggplot(data = sample, aes(x = `Time (ms)`, y = `ECG (mV)`)) +
@@ -373,52 +255,17 @@ for (i in 1:(length(ecg1.samples))) {
     ggtitle(paste("ECG1 Sample ", sample_name, "(", i, ") Peaks")) +
     geom_line() +
     geom_point(peaks, mapping=aes(x = `Time (ms)`, y = `ECG (mV)`), color="red")
+
   }
-  ggsave(filename=paste0("ecg1rerun2.", sample_name, "_", i, ".png"), device=png, height=10, width=17)
-  # fwrite(df, file=paste0("ecg1rerun2.", sample_name, "_", i, ".csv"))
+  ggsave(filename=paste0("ecg1rerun3.", sample_name, "_", i, ".png"), device=png, height=10, width=17)
 
   # export each window to its own sheet page on an excel file
-
-  results <- list()
+  results = list()
   for (w in 1:length(windows)) {
-    result <- cbind(windows[[w]][[1]], windows[[w]][[2]]) # bind the stats df and the window df 
-    results[[w]] <- result
+    result = cbind(windows[[w]][[1]], windows[[w]][[2]]) # bind the stats df and the window df 
+    results[[w]] = result
   }
-  names(results) <- paste0("window - ", 1:length(windows))
+  names(results) = c(paste0("window - ", 1:length(windows)))
   
-  write.xlsx(results, file = paste0("ecg1rerun2.", sample_name, "_", i, ".xlsx"), asTable = TRUE)
+  write.xlsx(results, file = paste0("ecg1rerun3.", sample_name, "_", i, ".xlsx"), asTable = TRUE)
 }
-# ecg2.peaks = list()
-# ecg2.windows = list()
-# for (i in 1:(length(ecg2.samples))) {
-#   ecg2.peaks = ecg2.samples[[i]][[2]][find_peaks(x=ecg1.samples[[i]][[2]]$`ECG (mV)`, ignore_threshold = 0.3, span = 20), ]
-#   ecg2.stablepeaks[[i]] = list()
-#   ecg2.stablepeaks[[i]][[1]] = ecg2.samples[[i]][[1]]
-#   ecg2.stablepeaks[[i]][[2]] = getStablePeaks(ecg2.peaks, minPeakStd=50, minTimeGap=10, windowSize=600, nHighPeaks=6, slide=100)
-# }
-# NOTES -------------------------------------------------------------
-#
-# for weird behavior on 3563_4
-# time difference calculated directly
-#   -- INSTEAD OF STDEV --
-#   calculate average time gap between consecutive highest peaks
-#   compare this against the fixed time gap
-#   make sure the difference is small enough
-#     ex. 125 for this sample
-#   100-150 for mouse in general <-- use consistently for all samples
-#
-# also good information to not find a window
-#
-# format of results
-# - colored graphs are good
-# - tables for each sample; what's the time gap between two consecutive highest p
-# - R-R interval (gap between 2 consecutive highest peaks)
-# - R-T interval (gap between 1st highest peak and lower peak between it and the next highest peak)
-# find big regions of time gaps
-# then refine those windows with peaks heights
-# fixing the standard deviation thing
-# - having minimum peak of ~400
-# - having a maximum peak of ~1000
-# - R-squared
-# RR, PQ, QR
-# average
